@@ -1,0 +1,88 @@
+======================================================================================================================
+
+
+			RELATÓRIO
+
+======================================================================================================================
+
+INF1019 - Sistemas de Computação - PUC-RIO - 2017.2
+
+Trabalho 1 - Escalonamento em Múltiplos Níveis com Feedback (MLF)
+
+Aluno: Gabriel Brito Cantergiani
+Matrícula: 1320681
+
+
+======================================================================================================================
+
+Os programas que fazem parte deste trabalho são:
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+interpretador
+
+	-códigos fonte: interpretador.c
+
+
+
+	-descrição: 
+
+	Consiste no módulo de implementação do interpretador de comandos. Este módulo aloca áreas de memória compartilhada para a comunicação com o escalonador. Após isso, entra em loop de leitura de comandos. Os comandos lidos devem ser no formato:  exec <progX> (<rajada1>, <rajada2>, <rajada3>. <rajada4>, <rajada5>)
+
+				progX pode ser um dos programas usuários também contidos neste trabalho: prog1, prog2, prog3 e prog4
+
+				as rajadas podem ser de 1 a 5. 
+
+				Exemplos:
+							exec prog1 (2, 12, 5)
+							exec prog3 (8, 14, 17, 1)
+							exec prog2 (1, 2, 9, 4, 6)
+							exec prog4 (4)
+
+
+	- Para terminar o loop de leitura, e portanto o programa, basta digitar como entrada um valor fora do formato esperado, como -1.
+	- Ao terminar a execução do interpretador, por meio de uma flag em memória compartilhada, o programa escalonador também é terminado.
+
+
+
+-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+escalonador
+	
+	-códigos fonte: escalonador.c
+					auxiliar.c
+					auxiliar.h
+
+
+	-descrição:
+		Este módulo consiste na implementação de um escalonador de processos em níveis de prioridade, contendo 3 níveis. O programa também aloca as mesmas áreas de memória compartilhada para receber os parâmetros do interpretador (nome dos programas e rajadas). Consiste de um loop, que checa a cada iteração se existe um novo processo enviado pelo interpretador. Caso exista, uma função auxiliar é chamada para criar um novo processo (via fork()), e passar os parâmetros ao novo processo filho, que executa o programa usuário em questão, em background. Dentro do loop, o escalonador obtém um processo da fila corrente, envia um sinal de continuação (SIGCONT) à este processo e espera o QUANTUM de tempo referente á fila corrente. Após o tempo passar, para o processo (SIGSTOP) e verifica se o mesmo estava em CPU-Bound ou IO-Bound, colocando-o em outra fila de acordo com a situação. (Se estivesse em CPU-Bound, desce o processo de fila, e em IO-Bound sobe de fila).
+
+		Os processos filho se comunicam com o escalonador através de sinais, sinalizando que estão em w4IO, ou que terminaram. Estes sinais são tratados com handlers implementados no próprio módulo, que tomam a ação necessária com o processo, e continuam a execução.
+
+		Para terminar o programa, basta entrar com um comando fora do formato no interpretador, como comentado, ou, enviar o sinal de interrupção CTRL-C.
+
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Os Arquivos aux.c e aux.h contém algumas funções auxiliares ao escalonador, que mantém o controle dos processos. Neles, estão definidas as estruturas Processo e Fila, que guardam informações de um processo e a prioridade de um processo no momento, respectivamente. Também possuem a definição das funções de manipulação dos processos e filas.
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Os programas usuários estão dentro da pasta /progs (esta pasta fica no mesmo diretorio do escalonador) e são:
+
+progs/prog1
+progs/prog2
+progs/prog3
+progs/prog4
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+Conclusões e Observações
+
+Os programas não apresentaram nenhum problema nos meus testes. Estão rodando normalmente, e executando o comportamento esperado. O escalonador foi implementado dando preferência total às filas de maior prioridade. Ou seja, a fila em execução sempre será a primeira fila não vazia (de maior prioridade). Um problema que tive foi com o sinal SIGCHLD. Por algum motivo, que não consegui descobrir, quando um processo usuário terminava e mandava o sinal SIGCHLD, o escalonador também parava a execução. A minha solução foi subsituir pelo sinal SIGUSR1, o que funcionou.
+
+Detalhe para a execução dos programas:
+
+	- O INTERPRETADOR DEVE SER EXECUTADO ANTES DO ESCALONADOR. Deve-se executar primeiro o intepretador.exe, e depois que este estiver rodando(esperando um comando), deve-se executar o escalonador.exe (preferencialmente em outro terminal)
+
